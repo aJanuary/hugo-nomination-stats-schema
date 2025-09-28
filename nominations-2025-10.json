@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Hugo nomination statistics schema 2025-10 [DRAFT]",
+  "type": "object",
+  "description": "Statistics for the nomination stage of the Hugo Awards for a given year.",
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Version of the format this document follows.",
+      "examples": ["2025-10"]
+    },
+    "year": {
+      "type": "integer",
+      "description": "Year of the award these statistics are for.",
+      "examples": [2025]
+    },
+    "numBallots": {
+      "type": "integer",
+      "description": "Number of valid nomination ballots received."
+    },
+    "categories": {
+      "type": "array",
+      "description": "The categories in the award, in the order they appeared on the nomination ballot.",
+      "items": { "$ref": "#/$defs/category" }
+    }
+  },
+  "required": ["version", "year", "numBallots", "categories"],
+  "$defs": {
+    "category": {
+      "type": "object",
+      "description": "A category in the award.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the category, as it appeared on the nomination ballot.",
+          "examples": ["Best Novel", "Best Dramatic Presentation, Long Form"]
+        },
+        "numBallots": {
+          "type": "integer",
+          "description": "Number of valid nomination ballots received for this category. May be less than the total number of valid nomination ballots if some ballots did not nominate in this category."
+        },
+        "numNominees": {
+          "type": "integer",
+          "description": "Number of unique candidates nominated in this category. Note, this may include ineligible nominees."
+        },
+        "nominees": {
+          "type": "array",
+          "description": "Highest ranked nominees for the category. Contains at least the finalists, but typically 10 more.",
+          "items": { "$ref": "#/$defs/nominee" }
+        },
+        "rounds": {
+          "type": "array",
+          "description": "Rounds in which nominees are eliminated. Only enough rounds needed to describe how the non-finalist nominees listed are eliminated are provided.",
+          "items": { "$ref": "#/$defs/round" }
+        }
+      },
+      "required": ["name", "numBallots", "numNominees", "nominees", "rounds"]
+    },
+    "nominee": {
+      "type": "object",
+      "description": "Candidate nominated for a category.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the nominee. For example, the name of a book, or a person.",
+          "examples": ["Vacuum Protocols", "Starlight Quarterly", "Jane Doe"]
+        },
+        "nominations": {
+          "type": "integer",
+          "description": "Number of nomination ballots that nominated this nominee."
+        },
+        "rank": {
+          "type": "integer",
+          "description": "Rank of the nominee, indicating their elimination order in the EPH process. Nominees who are not eliminated have rank 0. Nominees eliminated in the last round have rank 1, those eliminated in the previous round have rank 2, and so on. Higher rank values mean the nominee was eliminated earlier in the process.",
+          "minimum": 0
+        },
+        "finalist": {
+          "type": "boolean",
+          "description": "Indicates if the nominee appeared as a finalist on the ballot for this category. If absent, the finalist status is unknown."
+        },
+        "removed": {
+          "type": "boolean",
+          "description": "Indicates if the nominee was removed from consideration (e.g. due to ineligibility or declining nomination). If absent, it is unknown if they are a removed."
+        }
+      },
+      "if": {
+        "properties": {
+          "removed": { "const": true }
+        }
+      },
+      "then": {
+        "properties": {
+          "removedReason": {
+            "type": "string",
+            "description": "Reason for removal, if the nominee was removed.",
+            "examples": [
+              "Deemed ineligible because it was first published in 2024.",
+              "Declined nomination in this category."
+            ]
+          }
+        }
+      },
+      "required": ["name", "nominations", "rank"]
+    },
+    "round": {
+      "type": "object",
+      "description": "Round in which one or more nominees are eliminated.",
+      "properties": {
+        "number": {
+          "type": "integer",
+          "description": "Which 1-indexed round number this is."
+        },
+        "scaledPoints": {
+          "type": "array",
+          "description": "Points assigned to each non-eliminated nominee at the start of this round, listed in the same order as the nominees array. Values are multiplied by 60 to avoid rounding errors; divide by 60 to obtain the actual points.",
+          "minItems": 1,
+          "items": {
+            "type": "integer",
+            "description": "Points assigned to the nominee, multiplied by 60."
+          }
+        },
+        "survivors": {
+          "type": "array",
+          "description": "Indices of nominees (from the nominees array) that were eligible for elimination this round due to low ranking, but survived. May be empty if no nominees survived.",
+          "minItems": 0,
+          "items": {
+            "type": "integer",
+            "description": "0-based index into the nominees array.",
+            "minimum": 0
+          }
+        },
+        "eliminated": {
+          "type": "array",
+          "description": "Indices of nominees (from the nominees array) that were eliminated in this round.",
+          "minItems": 1,
+          "items": {
+            "type": "integer",
+            "description": "0-based index into the nominees array.",
+            "minimum": 0
+          }
+        }
+      },
+      "required": ["number", "scaledPoints", "survivors", "eliminated"]
+    }
+  }
+}
+
