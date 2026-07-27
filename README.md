@@ -4,6 +4,7 @@ JSON schemas for Hugo Awards voting statistics data.
 
 ## Versions
 
+ * [2026-07](https://ajanuary.github.io/hugo-nomination-stats-schema/nominations-2026-07/) [DRAFT]
  * [2025-10](https://ajanuary.github.io/hugo-nomination-stats-schema/nominations-2025-10/) [DRAFT]
 
 ## Goal
