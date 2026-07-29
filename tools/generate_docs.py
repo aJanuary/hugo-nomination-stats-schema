@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "json-schema-for-humans",
+# ]
+# ///
 """
 Generate documentation from JSON schema files.
 """
@@ -14,7 +20,7 @@ from json_schema_for_humans.generate import generate_from_filename
 def main():
     parser = argparse.ArgumentParser(description="Generate documentation from JSON schema files")
     parser.add_argument("schema_files", nargs="+", help="JSON schema files to process")
-    parser.add_argument("--output-dir", default="docs", help="Output directory for documentation (default: docs)")
+    parser.add_argument("--output-dir", required=True, help="Output directory for documentation")
 
     args = parser.parse_args()
 

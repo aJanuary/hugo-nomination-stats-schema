@@ -33,7 +33,7 @@ jobs:
 
       - name: Generate documentation
         run: |
-          cd generate-docs && uv run generate_docs.py ../nominations-*.json --output-dir ../docs
+          uv run tools/generate_docs.py nominations-*.json --output-dir docs
 
       - name: Setup Pages
         uses: actions/configure-pages@v3
