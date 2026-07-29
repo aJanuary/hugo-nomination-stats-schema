@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Hugo nomination statistics schema 2026-08 [DRAFT]",
+  "type": "object",
+  "description": "Statistics for the nomination stage of the Hugo Awards for a given year, describing the results of the E Pluribus Hugo (EPH) elimination process used to determine finalists. EPH runs in elimination rounds, each consisting of a Calculation Phase (points are computed for each remaining nominee), a Selection Phase (the nominees with the lowest points are selected for comparison), and an Elimination Phase (whichever of those has the fewest nominating ballots is eliminated). This repeats until only the finalists remain. See the WSFS Constitution for the full algorithm definition.",
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Version of the format this document follows.",
+      "examples": ["2026-08"]
+    },
+    "year": {
+      "type": "integer",
+      "description": "Year of the award these statistics are for.",
+      "examples": [2026]
+    },
+    "numBallots": {
+      "type": "integer",
+      "description": "Number of valid nomination ballots received.",
+      "minimum": 0
+    },
+    "categories": {
+      "type": "array",
+      "description": "The categories in the award, in the order they appeared on the nomination ballot.",
+      "items": { "$ref": "#/$defs/category" }
+    }
+  },
+  "required": ["version", "year", "numBallots", "categories"],
+  "$defs": {
+    "category": {
+      "type": "object",
+      "description": "A category in the award.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the category, as it appeared on the nomination ballot.",
+          "examples": ["Best Novel", "Best Dramatic Presentation, Long Form"]
+        },
+        "numBallots": {
+          "type": "integer",
+          "description": "Number of valid nomination ballots received for this category. May be less than the total number of valid nomination ballots if some ballots did not nominate in this category.",
+          "minimum": 0
+        },
+        "numNominees": {
+          "type": "integer",
+          "description": "Number of unique candidates nominated in this category. Note, this may include nominees later found ineligible (see 'removed'), since eligibility isn't checked before EPH runs. If absent, the number of nominees is not known (typically only true of older data sets)",
+          "minimum": 0
+        },
+        "nameFields": {
+          "type": "array",
+          "description": "Names of the fields that make up a nominee's identifying details in this category, in natural display order (e.g. [\"Title\", \"Author\"], or just [\"Name\"] for categories with a single identifying field). Every nominee in this category has a 'name' array with the same length and order, so 'nameFields[i]' labels 'nominee.name[i]'.",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "examples": [["Title", "Author"], ["Name"], ["Show", "Episode"]]
+        },
+        "nominees": {
+          "type": "array",
+          "description": "Highest ranked nominees for the category. Contains at least the finalists, and typically around 16 total, though the exact cutoff is up to the publisher. May be fewer than 'numNominees'. Given in a fixed, deterministic order: by 'rank' ascending, then by descending points in the last round the nominee had points in (for a rank 0 nominee this is the final round), then by descending 'numNominations', then by ascending 'name', comparing element-by-element (see 'nameFields'). If the cutoff falls within a group of nominees sharing the same 'rank', the whole group is included rather than split - so this array is always exactly the set of nominees active at the start of the earliest round in 'rounds' (plus the finalists).",
+          "items": { "$ref": "#/$defs/nominee" }
+        },
+        "rounds": {
+          "type": "array",
+          "description": "Rounds in which nominees are eliminated, given in ascending order of 'number'. Only enough rounds needed to describe how the non-finalist nominees listed are eliminated are provided, so the earliest rounds of the full EPH process may be omitted - see 'number' on the round. May be empty if there are no non-finalist nominees to eliminate.",
+          "items": { "$ref": "#/$defs/round" }
+        }
+      },
+      "required": ["name", "numBallots", "nameFields", "nominees", "rounds"]
+    },
+    "nominee": {
+      "type": "object",
+      "description": "Candidate nominated for a category.",
+      "properties": {
+        "name": {
+          "type": "array",
+          "description": "Identifying details of the nominee, e.g. a book's title and author, or a person's name. Each element corresponds by position to the enclosing category's 'nameFields' (e.g. 'name[0]' is the value for 'nameFields[0]'), so this array has the same length and order as 'nameFields'.",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "examples": [["Vacuum Protocols", "Jane Doe"], ["Starlight Quarterly"], ["Starlight Chronicles", "The Beginning"]]
+        },
+        "numNominations": {
+          "type": "integer",
+          "description": "Number of nomination ballots that nominated this nominee.",
+          "minimum": 0
+        },
+        "rank": {
+          "type": "integer",
+          "description": "Rank of the nominee, indicating their elimination order in the EPH process. Nominees who are not eliminated by EPH have rank 0. Nominees eliminated in the last round have rank 1, those eliminated in the previous round have rank 2, and so on. Higher rank values mean the nominee was eliminated earlier in the process. Because a tie can cause multiple nominees to be eliminated in the same round, multiple nominees may share the same rank - rank is not a strict per-nominee ordering. Removal (see 'removed') happens after the EPH process concludes and does not change 'rank' - a removed nominee keeps the rank they had when EPH eliminated them (or 0, if they were never eliminated).",
+          "minimum": 0
+        },
+        "finalist": {
+          "type": "boolean",
+          "description": "Whether the nominee appeared as a finalist on the published final ballot for this category. Absent is equivalent to false. Usually this is the nominees with 'rank' 0 (i.e. those who survived every EPH round), though a nominee with a non-zero rank can also be a finalist if they were promoted to replace a rank 0 nominee removed before the ballot was published. There are typically 6 finalists, though a tie can lead to more. A nominee removed before the ballot was published is excluded ('finalist': false, 'removed': true), but once published, no further replacement happens: a finalist removed afterwards keeps 'finalist': true alongside 'removed': true."
+        },
+        "removed": {
+          "type": "boolean",
+          "description": "Whether the nominee was removed from consideration (e.g. due to ineligibility or declining nomination). Absent is equivalent to false, including when eligibility was never checked (typically only potential finalists - nominees with rank 0, and any nominees promoted to replace a removed one, see 'finalist' - are checked. Nominees further down the list are usually not)."
+        },
+        "removedReason": {
+          "type": "string",
+          "description": "Reason for removal, if known. Only intended to be present when the nominee was removed ('removed' is true), but even then a reason may not be provided.",
+          "examples": [
+            "Deemed ineligible because it was first published in 2024.",
+            "Declined nomination in this category."
+          ]
+        }
+      },
+      "required": ["name", "numNominations", "rank"]
+    },
+    "round": {
+      "type": "object",
+      "description": "An elimination round of the EPH process, consisting of a Calculation Phase (see 'scaledPoints'), a Selection Phase (see 'status'), and an Elimination Phase (see 'status'), in which one or more nominees are eliminated.",
+      "properties": {
+        "number": {
+          "type": "integer",
+          "description": "1-indexed position of this round in the full EPH process, counting from the very first round even if earlier rounds are omitted from this document's 'rounds' array. For example, if the first 20 rounds are omitted, the first round provided here has 'number' 21. If absent, the round number is not known (typically only true of older data sets)",
+          "minimum": 1
+        },
+        "activeNominees": {
+          "type": "array",
+          "description": "Points and Selection/Elimination Phase status for each nominee not yet eliminated in an earlier round, including nominees about to be eliminated in this round. Entries are ordered ascending by 'nomineeIndex' with no gaps - 'activeNominees[k].nomineeIndex' equals 'k' for every position 'k' - so this array is always exactly the leading prefix of the category's 'nominees' array that is still active, in the same order.",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/activeNominee" }
+        }
+      },
+      "required": ["activeNominees"]
+    },
+    "activeNominee": {
+      "type": "object",
+      "description": "A nominee's points and elimination status during a round of the EPH elimination process.",
+      "properties": {
+        "nomineeIndex": {
+          "type": "integer",
+          "description": "Index of this nominee's entry in the enclosing category's 'nominees' array. Every nominee referenced this way is present in that array.",
+          "minimum": 0
+        },
+        "scaledPoints": {
+          "type": "integer",
+          "description": "This nominee's points at the start of the round, as computed in the Calculation Phase. Multiplied by 60 to avoid rounding errors - divide by 60 to obtain the actual points. (60 is the lowest common denominator of the fractional points possible under EPH, since a ballot splits one point evenly among up to 5 remaining nominated works)",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": ["survivedElimination", "eliminated"],
+          "description": "Present when this nominee was selected in the Selection Phase for comparison in the Elimination Phase (normally the two nominees with the lowest points are selected, but there can be more if there is a tie): 'survivedElimination' if they were compared but not eliminated, 'eliminated' if they were eliminated. Absent if this nominee was not selected this round."
+        }
+      },
+      "required": ["nomineeIndex", "scaledPoints"]
+    }
+  }
+}
